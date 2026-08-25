@@ -1,8 +1,8 @@
 # Turn work-order photos into a dispatch handoff
 
-Infrai gives you one key and one bill for both the photo assessment and the follow-up embedding. Keep the official OpenAI TypeScript client and point its `baseURL` at Infrai: the service first reads a work-order photo into a dispatch assessment, then embeds the technician follow-up assembled from that assessment. The handoff is deliberate and visible in `DispatchLesson.run`: `chat.completions` produces the operational facts, the local policy chooses `scheduled` or `supervisor-review`, and `embeddings` receives the exact follow-up text that a search or learning-history system can retain.
+Stick with the official OpenAI TypeScript client and point its `baseURL` at Infrai: one api covers both steps, so you read a work-order photo into a dispatch assessment and then embed the technician follow-up built from that assessment. The handoff is explicit in `DispatchLesson.run`: `chat.completions` pulls the operational facts, the local policy picks `scheduled` or `supervisor-review`, and `embeddings` gets the exact follow-up text a search or learning-history system can store.
 
-The one real gotcha is the `/v1` suffix in `baseURL`; include it exactly as shown so the existing OpenAI client addresses the compatible API. It is one key, one bill across both capabilities, so this two-step lesson does not introduce a second provider credential when the workflow crosses from assessment to retrieval data.
+The one thing to watch is the `/v1` suffix in `baseURL`; copy it exactly so the existing OpenAI client hits the compatible API. It is one key, one bill across both capabilities, so this two-step flow does not add a second provider credential when the work moves from assessment to retrieval data.
 
 ## Run the complete lesson
 
@@ -12,7 +12,7 @@ export INFRAI_API_KEY="your-key"
 npm start
 ```
 
-In another terminal, submit one domain-shaped request:
+In another terminal, send one domain-shaped request:
 
 ```bash
 curl -X POST http://localhost:3000/work-orders/assess \
@@ -26,13 +26,13 @@ curl -X POST http://localhost:3000/work-orders/assess \
   }'
 ```
 
-The successful response contains the work-order ID, the chosen dispatch status, the photo assessment, a technician follow-up sentence, and its numeric embedding. Use a reachable photo URL when running the live example.
+A successful response has the work-order ID, the chosen dispatch status, the photo assessment, a technician follow-up sentence, and its numeric embedding. Use a reachable photo URL for the live example.
 
 ## Read the decision before the plumbing
 
-`src/dispatch_lesson.ts` is the small reusable module. Its most important line is the local business rule: a `high` safety risk becomes `supervisor-review`; lower risks become `scheduled`. Keeping that rule outside the model call makes the dispatch transition deterministic and easy to teach, audit, and test, while Zod checks both the incoming work order and the model's structured assessment at their boundaries.
+`src/dispatch_lesson.ts` is the small reusable module. The key line is the local business rule: a `high` safety risk becomes `supervisor-review`; lower risks become `scheduled`. Keeping that rule out of the model call makes the dispatch transition deterministic and easy to teach, audit, and test. Zod checks the incoming work order and the model's structured assessment at their boundaries.
 
-`src/work_order_service.ts` is the explanatory entry point. It accepts only `POST /work-orders/assess`, validates the JSON body, runs the two-capability lesson, and returns the concrete dispatch record.
+`src/work_order_service.ts` is the entry point. It takes only `POST /work-orders/assess`, validates the JSON body, runs the two-capability lesson, and returns the concrete dispatch record.
 
 ## Verify the business rule
 
@@ -41,11 +41,11 @@ npm run typecheck
 npm test
 ```
 
-The focused test supplies a high-risk breaker-panel assessment and expects `supervisor-review`; it also checks that a medium-risk valve assessment is `scheduled`. These tests exercise the dispatch decision without making a network request.
+The focused test feeds a high-risk breaker-panel assessment and expects `supervisor-review`; it also checks a medium-risk valve assessment is `scheduled`. These run the dispatch decision with no network call.
 
 ## Where this example stops
 
-The repository demonstrates request validation, photo assessment, the dispatch transition, and creation of a follow-up embedding. Persisting the returned record and connecting it to a technician queue belong to the host field-service product.
+The repo shows request validation, photo assessment, the dispatch transition, and follow-up embedding creation. Persisting the returned record and wiring it to a technician queue are on the host field-service product.
 
 ## License
 
